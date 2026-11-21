@@ -943,6 +943,14 @@ a:hover { color: var(--link-hover); opacity: 0.85; }
 .project-card .tags {
   margin-top: auto;
 }
+.project-desc {
+  font-size: 13.5px;
+  color: var(--ink-secondary);
+  line-height: 1.68;
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-weight: 400;
+}
 
 .project-title-link {
   color: var(--ink);
@@ -1440,6 +1448,7 @@ a:hover { color: var(--link-hover); opacity: 0.85; }
   .card-meta { gap: 4px; }
   .card-title { font-size: 14px; }
   .card li { font-size: 13px; }
+  .project-desc { font-size: 13px; }
 
   .mobile-bottom-bar {
     position: fixed;

@@ -390,8 +390,8 @@ window.addEventListener('touchmove', (e) => {
 // ============================================================================
 function initMascot() {
   const display = document.getElementById('mascotDisplay') || document.getElementById('mascotWrapper');
-  const dirSprite = document.getElementById('mascotDirections');
-  if (!display || !dirSprite) return;
+  const sprites = Array.from(document.querySelectorAll('#mascotDirections, .mobile-mascot-sprite'));
+  if (!display || sprites.length === 0) return;
 
   // 9 sprite poses from the 3x3 avatar sheet:
   // Row 0: up-left, up, up-right
@@ -412,20 +412,6 @@ function initMascot() {
   let currentDir = 'center';
   let lastSector = -1;
 
-  // Cached bounding rect - updated on resize / scroll to avoid layout thrashing on every mousemove!
-  let cachedCenterX = 0;
-  let cachedCenterY = 0;
-
-  function updateMascotCenter() {
-    const rect = display.getBoundingClientRect();
-    cachedCenterX = rect.left + rect.width / 2;
-    cachedCenterY = rect.top + rect.height / 2;
-  }
-
-  updateMascotCenter();
-  window.addEventListener('resize', updateMascotCenter, { passive: true });
-  window.addEventListener('scroll', updateMascotCenter, { passive: true });
-
   function getSpritePos(index) {
     const col = index % 3;
     const row = Math.floor(index / 3);
@@ -436,14 +422,27 @@ function initMascot() {
     if (dirName === currentDir) return;
     currentDir = dirName;
     const idx = DIR_NAMES.indexOf(dirName);
-    if (idx !== -1) {
-      dirSprite.style.backgroundPosition = getSpritePos(idx);
-    }
+    if (idx !== -1) sprites.forEach((sprite) => {
+      sprite.style.backgroundPosition = getSpritePos(idx);
+    });
   }
 
   function handlePointer(x, y) {
-    const dx = x - cachedCenterX;
-    const dy = y - cachedCenterY;
+    // Pick the nearest rendered avatar. This keeps the tiny mobile header mascot
+    // responsive too, even though the desktop mascot is hidden at that size.
+    const visibleSprites = sprites.filter((sprite) => {
+      const rect = sprite.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+    if (visibleSprites.length === 0) return;
+    const target = visibleSprites.reduce((nearest, sprite) => {
+      const rect = sprite.getBoundingClientRect();
+      const distance = Math.hypot(x - (rect.left + rect.width / 2), y - (rect.top + rect.height / 2));
+      return distance < nearest.distance ? { sprite, distance } : nearest;
+    }, { sprite: visibleSprites[0], distance: Infinity }).sprite;
+    const rect = target.getBoundingClientRect();
+    const dx = x - (rect.left + rect.width / 2);
+    const dy = y - (rect.top + rect.height / 2);
     const dist = Math.hypot(dx, dy);
 
     // If cursor is in deadzone near the face center, make direct eye contact
@@ -468,6 +467,14 @@ function initMascot() {
 
   window.addEventListener('pointermove', (e) => {
     handlePointer(e.clientX, e.clientY);
+  }, { passive: true });
+
+  // Some mobile browsers don't emit pointermove consistently for touch input.
+  window.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) handlePointer(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches[0]) handlePointer(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: true });
 
   document.addEventListener('mouseleave', () => {
