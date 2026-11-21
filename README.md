@@ -28,7 +28,7 @@ I am an **Aspiring Data Analyst & Data Engineer** passionate about exploring dat
 ## 📂 Highlights & Featured Work
 
 - **Projects Showcase:**
-  - Deep learning and computer vision experiments on Kaggle (*Vitamin Deficiency AI*, *Landslide Detection*).
+  - Deep learning and computer vision experiments on Kaggle (*Landslide Detection*, *Skin Disease Classification*).
   - Exploratory data analytics, interactive visualization dashboards, and data pipelines.
 - **Technical Articles:**
   - Published articles on Medium about *Prompt Engineering*, *Vibe Coding*, and *AI-powered Data Analytics*.
