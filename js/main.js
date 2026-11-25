@@ -120,6 +120,16 @@ function showView(view) {
   }
 
   // 4. Smooth Scroll to top & trigger element reveal
+  if (view === 'projects') {
+    if (window.scrollY > 10) {
+      isProgrammaticProjectScroll = true;
+      if (programmaticScrollTimer) clearTimeout(programmaticScrollTimer);
+      programmaticScrollTimer = setTimeout(() => {
+        isProgrammaticProjectScroll = false;
+      }, 700);
+    }
+    setActiveProjectChip('sec-projects');
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
   triggerFades();
 }
@@ -162,40 +172,97 @@ function performScrollToConnect() {
 // ============================================================================
 // 3. Project Showcase Navigation & Filter
 // ============================================================================
+let isProgrammaticProjectScroll = false;
+let programmaticScrollTimer = null;
+
+function setActiveProjectChip(sectionId) {
+  const chips = document.querySelectorAll('.subnav-chip');
+  chips.forEach((c) => {
+    const isMatch = c.getAttribute('href') === `#${sectionId}`;
+    c.classList.toggle('active', isMatch);
+  });
+}
+
+function updateActiveProjectChip() {
+  const projectsView = document.getElementById('view-projects');
+  if (!projectsView || !projectsView.classList.contains('active')) return;
+
+  const sections = Array.from(document.querySelectorAll('.project-category-section'));
+  if (!sections.length) return;
+
+  // When scrolled to the bottom of the page, activate the last visible section
+  const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 40;
+  if (nearBottom) {
+    const lastSec = sections[sections.length - 1];
+    const lastRect = lastSec.getBoundingClientRect();
+    if (lastRect.top < window.innerHeight && lastRect.bottom > 0) {
+      setActiveProjectChip(lastSec.id);
+      return;
+    }
+  }
+
+  // Pick the last section whose top has entered the upper reading zone
+  const readingOffset = Math.min(280, Math.round(window.innerHeight * 0.35));
+  let activeSection = sections[0];
+  for (const sec of sections) {
+    if (sec.getBoundingClientRect().top <= readingOffset) {
+      activeSection = sec;
+    }
+  }
+
+  setActiveProjectChip(activeSection.id);
+}
+
 function scrollToProjectSection(sectionId, btn) {
   const el = document.getElementById(sectionId);
   if (el) {
+    isProgrammaticProjectScroll = true;
+    if (programmaticScrollTimer) clearTimeout(programmaticScrollTimer);
+    programmaticScrollTimer = setTimeout(() => {
+      isProgrammaticProjectScroll = false;
+    }, 700);
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  const chips = document.querySelectorAll('.subnav-chip');
-  chips.forEach((c) => c.classList.remove('active'));
   if (btn) {
+    document.querySelectorAll('.subnav-chip').forEach((c) => c.classList.remove('active'));
     btn.classList.add('active');
+  } else {
+    setActiveProjectChip(sectionId);
   }
 }
 
 function initProjectScrollSpy() {
-  if (!('IntersectionObserver' in window)) return;
   const sections = document.querySelectorAll('.project-category-section');
   if (!sections.length) return;
 
-  const spyObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const id = entry.target.id;
-        const chip = document.querySelector(`.subnav-chip[href="#${id}"]`);
-        if (chip) {
-          document.querySelectorAll('.subnav-chip').forEach((c) => c.classList.remove('active'));
-          chip.classList.add('active');
-        }
-      }
+  let scrollTicking = false;
+  window.addEventListener('scroll', () => {
+    if (isProgrammaticProjectScroll || scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(() => {
+      updateActiveProjectChip();
+      scrollTicking = false;
     });
-  }, {
-    threshold: 0.35
-  });
+  }, { passive: true });
 
-  sections.forEach((sec) => spyObserver.observe(sec));
+  if ('onscrollend' in window) {
+    window.addEventListener('scrollend', () => {
+      isProgrammaticProjectScroll = false;
+    }, { passive: true });
+  }
+
+  if ('IntersectionObserver' in window) {
+    const spyObserver = new IntersectionObserver(() => {
+      if (!isProgrammaticProjectScroll) {
+        updateActiveProjectChip();
+      }
+    }, {
+      threshold: [0, 0.25, 0.5]
+    });
+
+    sections.forEach((sec) => spyObserver.observe(sec));
+  }
 }
 
 // ============================================================================
